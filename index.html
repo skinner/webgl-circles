@@ -3,10 +3,12 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>webgl circles</title>
-    <script src="http://greggman.github.io/webgl-fundamentals/webgl/resources/webgl-utils.js"></script>
+    <script src="webgl-utils.js"></script>
 
     <style type="text/css">
-      canvas { border: 1px solid black; }
+     html,body { height: 100%; margin: 0; padding: 0; }
+     #c { position: absolute; width: 100%; height: 100%; margin: 0; padding: 0; left: 0px; top: 0px; }
+     h1 {display: none;}
     </style>
 
     <script id="vshader" type="x-shader/x-vertex">
@@ -41,15 +43,19 @@
     </script>
   </head>
   <body>
-    <canvas id="c" width="400" height="400"></canvas>
+    <canvas id="c"></canvas>
     <script type="text/javascript">
      function init() {
          var canvas = document.getElementById("c");
+         canvas.width = canvas.offsetWidth;
+         canvas.height = canvas.offsetHeight;
          var gl = getWebGLContext(canvas);
          if (!gl) {
              alert("no WebGL");
              return;
          }
+         gl.enable(gl.BLEND);
+         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
          var colors = [];
          var verts = [];
