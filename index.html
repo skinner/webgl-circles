@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>webgl circles</title>
+    <script src="http://greggman.github.io/webgl-fundamentals/webgl/resources/webgl-utils.js"></script>
+
+    <style type="text/css">
+      canvas { border: 1px solid black; }
+    </style>
+
+    <script id="vshader" type="x-shader/x-vertex">
+     uniform mat4 u_matrix;
+     attribute vec4 a_vertex;
+     attribute vec4 a_color;
+     varying vec4 v_color;
+
+     void main() {
+         // Set the size of the point
+         gl_PointSize = 25.0;
+
+         // multiply each vertex by a matrix.
+         gl_Position = u_matrix * a_vertex;
+
+         // pass the color to the fragment shader
+         v_color = a_color;
+     }
+    </script>
+
+    <script id="fshader" type="x-shader/x-fragment">
+     precision mediump float;
+     varying vec4 v_color;
+     void main() {
+         vec2 dxy = gl_PointCoord - 0.5;
+         vec2 dxy2 = pow(dxy, vec2(2.0));
+         float centerDist = sqrt(dxy2.x + dxy2.y);
+         float radius = 0.5;
+         gl_FragColor = vec4(v_color.rgb, step(centerDist, radius));
+         //gl_FragColor = step(centerDist, radius) * v_color;
+     }
+    </script>
+  </head>
+  <body>
+    <canvas id="c" width="400" height="400"></canvas>
+    <script type="text/javascript">
+     function init() {
+         var canvas = document.getElementById("c");
+         var gl = getWebGLContext(canvas);
+         if (!gl) {
+             alert("no WebGL");
+             return;
+         }
+
+         var colors = [];
+         var verts = [];
+         var theta=0 
+         for(var radius=180.0; radius>1.0; radius-=2) {
+             colors.push(radius/60.0, 0.3, 1-(radius/60.0));
+             verts.push(200+radius*Math.cos(theta),200+radius*Math.sin(theta));
+             theta+=0.4;
+         }
+         var numPoints = colors.length / 3;
+
+         var colorBuffer = gl.createBuffer();
+         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
+         var vertBuffer = gl.createBuffer();
+         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+
+         var program = createProgramFromScripts(gl, ["vshader", "fshader"]);
+         gl.useProgram(program);
+
+         // look up the locations for the inputs to our shaders.
+         var u_matLoc = gl.getUniformLocation(program, "u_matrix");
+         var colorLoc = gl.getAttribLocation(program, "a_color");
+         var vertLoc = gl.getAttribLocation(program, "a_vertex");
+
+         // Set the matrix to some that makes 1 unit 1 pixel.
+         gl.uniformMatrix4fv(u_matLoc, false, [
+             2 / canvas.width, 0, 0, 0,
+             0, 2 / canvas.height, 0, 0,
+             0, 0, 1, 0,
+             -1, -1, 0, 1
+         ]);
+         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+         gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, 0, 0);
+         gl.enableVertexAttribArray(colorLoc);
+         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
+         gl.vertexAttribPointer(vertLoc, 2, gl.FLOAT, false, 0, 0);
+         gl.enableVertexAttribArray(vertLoc);
+
+         gl.drawArrays(gl.POINTS, 0, numPoints);
+     }
+
+     init();
+    </script>
+  </body>
+</html>
