@@ -1,4 +1,4 @@
-function WebGLCircleRenderer(glowContext, circleCount, colors, radii) {
+function WebGLCircleRenderer(glowContext, circleCount, colors, radii, alpha) {
     this.context = glowContext;
     this.count = circleCount;
 
@@ -19,13 +19,14 @@ function WebGLCircleRenderer(glowContext, circleCount, colors, radii) {
 
     var fragShader = [
         "precision mediump float;",
+        "uniform float u_alpha;",
         "varying vec3 v_color;",
 
         "void main() {",
         "    float centerDist = length(gl_PointCoord - 0.5);",
         "    float radius = 0.5;",
         // works for overlapping circles if blending is enabled
-        "    gl_FragColor = vec4(v_color, 0.3 * step(centerDist, radius));",
+        "    gl_FragColor = vec4(v_color, u_alpha * step(centerDist, radius));",
         "}"
     ].join("\n");
 
@@ -42,6 +43,7 @@ function WebGLCircleRenderer(glowContext, circleCount, colors, radii) {
                 0, 0, 1, 0,
                 -1, -1, 0, 1
             ])},
+            u_alpha: { value: new Float32Array([alpha]) },
             
             // attributes
             a_color: new Float32Array(colors),

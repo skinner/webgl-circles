@@ -16,8 +16,9 @@
   <body>
     <span style="background-color: rgba(0, 0, 0, 0.5); float: right;">
       Number of circles:
-      <input type="text" size=6 id="numCircles" value="12000" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()">
-      Max radius: <input type="text" size=3 id="maxRadius" value="25" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()">
+      <input type="text" size=6 id="numCircles" value="12000" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()"><br>
+      Max radius: <input type="text" size=3 id="maxRadius" value="25" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()"><br>
+      Opacity: <input type="text" size=3 id="alpha" value="0.5" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()"><br>
       <input type="button" id="drawButton" value="Draw">
     </span>
     <div id="container"></div>
@@ -62,6 +63,7 @@
          var numPoints = parseInt(document.getElementById("numCircles").value);
          var minRadius = 5;
          var maxRadius = parseInt(document.getElementById("maxRadius").value);
+         var alpha = parseFloat(document.getElementById("alpha").value);
          var maxVelocity = 1.5;
          var bands = 3;
          var bandWidth = 0.75
@@ -88,7 +90,7 @@
          }
 
          circleRenderer = new WebGLCircleRenderer(context, numPoints,
-                                                  colors, radii);
+                                                  colors, radii, alpha);
 
          
          var theta = 0;
