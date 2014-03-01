@@ -69,8 +69,8 @@ function WebGLCircleRenderer(glowContext, circleCount, colors, radii, alpha) {
 }
 
 WebGLCircleRenderer.prototype.setPositions = function(xs, ys) {
-    this.shader.attributes.a_x.bufferData(xs);
-    this.shader.attributes.a_y.bufferData(ys);
+    this.shader.attributes.a_x.bufferSubData(xs);
+    this.shader.attributes.a_y.bufferSubData(ys);
 };
 
 WebGLCircleRenderer.prototype.draw = function() {
