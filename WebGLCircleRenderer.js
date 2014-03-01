@@ -1,4 +1,4 @@
-function WebGLCircleRenderer(glowContext, circleCount, colors) {
+function WebGLCircleRenderer(glowContext, circleCount, colors, radii) {
     this.context = glowContext;
     this.count = circleCount;
 
@@ -6,11 +6,12 @@ function WebGLCircleRenderer(glowContext, circleCount, colors) {
         "uniform mat4 u_matrix;",
         "attribute float a_x;",
         "attribute float a_y;",
+        "attribute float a_radius;",
         "attribute vec3 a_color;",
         "varying vec3 v_color;",
         
         "void main() {",
-        "    gl_PointSize = 25.0;",
+        "    gl_PointSize = a_radius;",
         "    gl_Position = u_matrix * vec4(a_x, a_y, 1.0, 1.0);",
         "    v_color = a_color;",
         "}"
@@ -26,7 +27,7 @@ function WebGLCircleRenderer(glowContext, circleCount, colors) {
         "    float centerDist = sqrt(dxy2.x + dxy2.y);",
         "    float radius = 0.5;",
         "    // works for overlapping circles if blending is enabled",
-        "    gl_FragColor = vec4(v_color, step(centerDist, radius));",
+        "    gl_FragColor = vec4(v_color, 0.3 * step(centerDist, radius));",
         "}"
     ].join("\n");
 
@@ -46,6 +47,7 @@ function WebGLCircleRenderer(glowContext, circleCount, colors) {
             
             // attributes
             a_color: new Float32Array(colors),
+            a_radius: new Float32Array(radii),
             a_x: new Float32Array(circleCount),
             a_y: new Float32Array(circleCount)
         },

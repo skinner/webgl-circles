@@ -5,20 +5,23 @@
     <title>webgl circles</title>
     <script src="GLOWCore.js"></script>
     <script src="WebGLCircleRenderer.js"></script>
+    <script src="stats.min.js"></script>
 
     <style type="text/css">
-     html,body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
-     #container { position: absolute; width: 100%; height: 100%; margin: 0px; padding: 0px; left: 0px; top: 0px; }
+     html,body { height: 100%; margin: 0; padding: 0; overflow: hidden; color: white; font-family: sans-serif;}
+     #container { position: absolute; width: 100%; height: 100%; margin: 0px; padding: 0px; left: 0px; top: 0px; z-index: -1;}
     </style>
   </head>
   <body>
+    <!-- <span style="background-color: rgba(0, 0, 0, 0.5); float: right;">Number of circles: <input type="text" size=6 id="numCircles" value="12000"><input type="button" ></span>-->
     <div id="container"></div>
     <script type="text/javascript">
 
+     var context, stats;
      function init() {
          var container = document.getElementById("container");
 
-         var context = new GLOW.Context({
+         context = new GLOW.Context({
              width: container.offsetWidth,
              height: container.offsetHeight
          });
@@ -28,30 +31,72 @@
          }
 
          container.appendChild(context.domElement);
-         context.setupClear( { red: 1, green: 1, blue: 1, alpha: 1 } );
+         context.setupClear( { red: 0, green: 0, blue: 0, alpha: 1 } );
          context.GL.enable(context.GL.BLEND);
          context.GL.blendFunc(context.GL.SRC_ALPHA,
                               context.GL.ONE_MINUS_SRC_ALPHA);
 
-         var colors = [];
-         var xs = [];
-         var ys = [];
-         var theta=0;
-         for(var radius=180.0; radius>1.0; radius-=2) {
-             colors.push(radius/60.0, 0.3, 1-(radius/60.0));
-             xs.push(200+radius*Math.cos(theta));
-             ys.push(200+radius*Math.sin(theta));
-             theta+=0.4;
+
+         stats = new Stats();
+         stats.setMode(0);
+         stats.domElement.style.position = 'absolute';
+         stats.domElement.style.left = '0px';
+         stats.domElement.style.top = '0px';
+         document.body.appendChild( stats.domElement );
+
+         var numPoints = 12000;
+         var minRadius = 5;
+         var maxRadius = 20;
+         var maxVelocity = 1.5;
+         var bands = 3;
+         var bandWidth = 0.75
+         var pointsPerBand = (numPoints / bands) | 0;
+
+         var colors = new Float32Array(numPoints * 3);
+         var xs = new Float32Array(numPoints);
+         var ys = new Float32Array(numPoints);
+         var radii = new Float32Array(numPoints);
+         var phase = new Float32Array(numPoints);
+
+         for (var band = 0; band < bands; band++) {
+             for (var i = 0; i < pointsPerBand; i++) {
+                 var point = (band * pointsPerBand) + i;
+                 colors[(point * 3) + ((band + 0) % 3)] = 0.3 * (i / pointsPerBand);
+                 colors[(point * 3) + ((band + 1) % 3)] = 0.6;
+                 colors[(point * 3) + ((band + 2) % 3)] = 0.3 * (1 - (i / pointsPerBand));
+
+                 xs[point] = (i / pointsPerBand) * context.width;
+                 ys[point] = ((band / bands) * context.height) + (Math.random() * ((context.height * bandWidth) / bands));
+                 radii[point] = minRadius + (Math.random() * (maxRadius - minRadius));
+                 phase[point] = Math.random() * Math.PI * 2;
+             }
          }
 
-         var circleRenderer = new WebGLCircleRenderer(context, xs.length,
-                                                      colors);
+         var circleRenderer = new WebGLCircleRenderer(context, numPoints,
+                                                      colors, radii);
 
-         circleRenderer.setPositions(xs, ys);
+         
+         var theta = 0;
+         var dTheta = 0.01;
+         var multiplier = 1.5;
+         function step() {
+             stats.begin();
 
-         context.cache.clear();
-         context.clear();
-         circleRenderer.draw();
+             theta = (theta + dTheta) % (Math.PI * 2);
+             for (var i = 0; i < numPoints; i++) {
+                 ys[i] += Math.sin(theta + phase[i]) * multiplier;
+             }
+             circleRenderer.setPositions(xs, ys);
+
+             context.cache.clear();
+             context.clear();
+             circleRenderer.draw();
+             requestAnimationFrame(step);
+
+             stats.end();
+         }
+
+         requestAnimationFrame(step);
      }
 
      init();
