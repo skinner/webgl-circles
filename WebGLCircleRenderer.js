@@ -22,11 +22,9 @@ function WebGLCircleRenderer(glowContext, circleCount, colors, radii) {
         "varying vec3 v_color;",
 
         "void main() {",
-        "    vec2 dxy = gl_PointCoord - 0.5;",
-        "    vec2 dxy2 = pow(dxy, vec2(2.0));",
-        "    float centerDist = sqrt(dxy2.x + dxy2.y);",
+        "    float centerDist = length(gl_PointCoord - 0.5);",
         "    float radius = 0.5;",
-        "    // works for overlapping circles if blending is enabled",
+        // works for overlapping circles if blending is enabled
         "    gl_FragColor = vec4(v_color, 0.3 * step(centerDist, radius));",
         "}"
     ].join("\n");
