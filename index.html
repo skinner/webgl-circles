@@ -3,59 +3,63 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>webgl circles</title>
-    <script src="webgl-utils.js"></script>
+    <script src="GLOWCore.js"></script>
 
     <style type="text/css">
-     html,body { height: 100%; margin: 0; padding: 0; }
-     #c { position: absolute; width: 100%; height: 100%; margin: 0; padding: 0; left: 0px; top: 0px; }
-     h1 {display: none;}
+     html,body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+     #container { position: absolute; width: 100%; height: 100%; margin: 0px; padding: 0px; left: 0px; top: 0px; }
     </style>
 
     <script id="vshader" type="x-shader/x-vertex">
      uniform mat4 u_matrix;
-     attribute vec4 a_vertex;
-     attribute vec4 a_color;
-     varying vec4 v_color;
+     attribute vec2 a_vertex;
+     attribute vec3 a_color;
+     varying vec3 v_color;
 
      void main() {
-         // Set the size of the point
          gl_PointSize = 25.0;
 
-         // multiply each vertex by a matrix.
-         gl_Position = u_matrix * a_vertex;
+         gl_Position = u_matrix * vec4(a_vertex, 1.0, 1.0);
 
-         // pass the color to the fragment shader
          v_color = a_color;
      }
     </script>
 
     <script id="fshader" type="x-shader/x-fragment">
      precision mediump float;
-     varying vec4 v_color;
+     varying vec3 v_color;
      void main() {
          vec2 dxy = gl_PointCoord - 0.5;
          vec2 dxy2 = pow(dxy, vec2(2.0));
          float centerDist = sqrt(dxy2.x + dxy2.y);
          float radius = 0.5;
-         gl_FragColor = vec4(v_color.rgb, step(centerDist, radius));
-         //gl_FragColor = step(centerDist, radius) * v_color;
+         // works for overlapping circles if blending is enabled
+         gl_FragColor = vec4(v_color, step(centerDist, radius));
      }
     </script>
   </head>
   <body>
-    <canvas id="c"></canvas>
+    <div id="container"></div>
     <script type="text/javascript">
+
      function init() {
-         var canvas = document.getElementById("c");
-         canvas.width = canvas.offsetWidth;
-         canvas.height = canvas.offsetHeight;
-         var gl = getWebGLContext(canvas);
-         if (!gl) {
+         var container = document.getElementById("container");
+         var width = container.offsetWidth;
+         var height = container.offsetHeight;
+         var context = new GLOW.Context({
+             width: width,
+             height: height
+         });
+         if (null === context.GL) {
              alert("no WebGL");
              return;
          }
-         gl.enable(gl.BLEND);
-         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+         container.appendChild(context.domElement);
+         context.setupClear( { red: 1, green: 1, blue: 1, alpha: 1 } );
+         context.GL.enable(context.GL.BLEND);
+         context.GL.blendFunc(context.GL.SRC_ALPHA,
+                              context.GL.ONE_MINUS_SRC_ALPHA);
 
          var colors = [];
          var verts = [];
@@ -65,39 +69,37 @@
              verts.push(200+radius*Math.cos(theta),200+radius*Math.sin(theta));
              theta+=0.4;
          }
-         var numPoints = colors.length / 3;
 
-         var colorBuffer = gl.createBuffer();
-         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+         var circleShaderInfo = {
+             vertexShader: document.getElementById("vshader").text,
+             fragmentShader: document.getElementById("fshader").text,
 
-         var vertBuffer = gl.createBuffer();
-         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+             data: {
+                 // uniforms
+                 // Use a transformation matrix that makes 1 unit 1 pixel.
+                 u_matrix: { value: new Float32Array([
+                     2 / width, 0, 0, 0,
+                     0, 2 / height, 0, 0,
+                     0, 0, 1, 0,
+                     -1, -1, 0, 1
+                 ])},
 
-         var program = createProgramFromScripts(gl, ["vshader", "fshader"]);
-         gl.useProgram(program);
+                 // attributes
+                 a_color: new Float32Array(colors),
+                 a_vertex: new Float32Array(verts)
+             },
 
-         // look up the locations for the inputs to our shaders.
-         var u_matLoc = gl.getUniformLocation(program, "u_matrix");
-         var colorLoc = gl.getAttribLocation(program, "a_color");
-         var vertLoc = gl.getAttribLocation(program, "a_vertex");
+             primitives: GL.POINTS,
+             interleave: {
+                 a_x: false,
+                 a_y: false
+             }
+         };
 
-         // Set the matrix to some that makes 1 unit 1 pixel.
-         gl.uniformMatrix4fv(u_matLoc, false, [
-             2 / canvas.width, 0, 0, 0,
-             0, 2 / canvas.height, 0, 0,
-             0, 0, 1, 0,
-             -1, -1, 0, 1
-         ]);
-         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-         gl.vertexAttribPointer(colorLoc, 3, gl.FLOAT, false, 0, 0);
-         gl.enableVertexAttribArray(colorLoc);
-         gl.bindBuffer(gl.ARRAY_BUFFER, vertBuffer);
-         gl.vertexAttribPointer(vertLoc, 2, gl.FLOAT, false, 0, 0);
-         gl.enableVertexAttribArray(vertLoc);
-
-         gl.drawArrays(gl.POINTS, 0, numPoints);
+         circleShader = new GLOW.Shader(circleShaderInfo);
+         context.cache.clear();
+         context.clear();
+         circleShader.draw();
      }
 
      init();
