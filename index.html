@@ -4,39 +4,12 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>webgl circles</title>
     <script src="GLOWCore.js"></script>
+    <script src="WebGLCircleRenderer.js"></script>
 
     <style type="text/css">
      html,body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
      #container { position: absolute; width: 100%; height: 100%; margin: 0px; padding: 0px; left: 0px; top: 0px; }
     </style>
-
-    <script id="vshader" type="x-shader/x-vertex">
-     uniform mat4 u_matrix;
-     attribute vec2 a_vertex;
-     attribute vec3 a_color;
-     varying vec3 v_color;
-
-     void main() {
-         gl_PointSize = 25.0;
-
-         gl_Position = u_matrix * vec4(a_vertex, 1.0, 1.0);
-
-         v_color = a_color;
-     }
-    </script>
-
-    <script id="fshader" type="x-shader/x-fragment">
-     precision mediump float;
-     varying vec3 v_color;
-     void main() {
-         vec2 dxy = gl_PointCoord - 0.5;
-         vec2 dxy2 = pow(dxy, vec2(2.0));
-         float centerDist = sqrt(dxy2.x + dxy2.y);
-         float radius = 0.5;
-         // works for overlapping circles if blending is enabled
-         gl_FragColor = vec4(v_color, step(centerDist, radius));
-     }
-    </script>
   </head>
   <body>
     <div id="container"></div>
@@ -44,11 +17,10 @@
 
      function init() {
          var container = document.getElementById("container");
-         var width = container.offsetWidth;
-         var height = container.offsetHeight;
+
          var context = new GLOW.Context({
-             width: width,
-             height: height
+             width: container.offsetWidth,
+             height: container.offsetHeight
          });
          if (null === context.GL) {
              alert("no WebGL");
@@ -62,44 +34,24 @@
                               context.GL.ONE_MINUS_SRC_ALPHA);
 
          var colors = [];
-         var verts = [];
-         var theta=0 
+         var xs = [];
+         var ys = [];
+         var theta=0;
          for(var radius=180.0; radius>1.0; radius-=2) {
              colors.push(radius/60.0, 0.3, 1-(radius/60.0));
-             verts.push(200+radius*Math.cos(theta),200+radius*Math.sin(theta));
+             xs.push(200+radius*Math.cos(theta));
+             ys.push(200+radius*Math.sin(theta));
              theta+=0.4;
          }
 
-         var circleShaderInfo = {
-             vertexShader: document.getElementById("vshader").text,
-             fragmentShader: document.getElementById("fshader").text,
+         var circleRenderer = new WebGLCircleRenderer(context, xs.length,
+                                                      colors);
 
-             data: {
-                 // uniforms
-                 // Use a transformation matrix that makes 1 unit 1 pixel.
-                 u_matrix: { value: new Float32Array([
-                     2 / width, 0, 0, 0,
-                     0, 2 / height, 0, 0,
-                     0, 0, 1, 0,
-                     -1, -1, 0, 1
-                 ])},
+         circleRenderer.setPositions(xs, ys);
 
-                 // attributes
-                 a_color: new Float32Array(colors),
-                 a_vertex: new Float32Array(verts)
-             },
-
-             primitives: GL.POINTS,
-             interleave: {
-                 a_x: false,
-                 a_y: false
-             }
-         };
-
-         circleShader = new GLOW.Shader(circleShaderInfo);
          context.cache.clear();
          context.clear();
-         circleShader.draw();
+         circleRenderer.draw();
      }
 
      init();
