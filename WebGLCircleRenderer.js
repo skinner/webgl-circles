@@ -76,3 +76,9 @@ WebGLCircleRenderer.prototype.setPositions = function(xs, ys) {
 WebGLCircleRenderer.prototype.draw = function() {
     this.shader.draw();
 };
+
+WebGLCircleRenderer.prototype.dispose = function() {
+    delete this.context;
+    this.shader.dispose();
+    delete this.shader;
+};

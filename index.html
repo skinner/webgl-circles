@@ -13,12 +13,17 @@
     </style>
   </head>
   <body>
-    <!-- <span style="background-color: rgba(0, 0, 0, 0.5); float: right;">Number of circles: <input type="text" size=6 id="numCircles" value="12000"><input type="button" ></span>-->
+    <span style="background-color: rgba(0, 0, 0, 0.5); float: right;">
+      Number of circles:
+      <input type="text" size=6 id="numCircles" value="12000" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()">
+      Max radius: <input type="text" size=3 id="maxRadius" value="25" onkeydown="if (event.keyCode == 13) document.getElementById('drawButton').click()">
+      <input type="button" id="drawButton" value="Draw">
+    </span>
     <div id="container"></div>
     <script type="text/javascript">
 
-     var context, stats;
-     function init() {
+     var context, stats, animationID, circleRenderer;
+     function initPage() {
          var container = document.getElementById("container");
 
          context = new GLOW.Context({
@@ -27,7 +32,7 @@
          });
          if (null === context.GL) {
              alert("no WebGL");
-             return;
+             return false;
          }
 
          container.appendChild(context.domElement);
@@ -44,9 +49,18 @@
          stats.domElement.style.top = '0px';
          document.body.appendChild( stats.domElement );
 
-         var numPoints = 12000;
+         return true;
+     }
+
+     function initCircles() {
+         if (animationID !== undefined) {
+             cancelAnimationFrame(animationID);
+             circleRenderer.dispose();
+         }
+
+         var numPoints = parseInt(document.getElementById("numCircles").value);
          var minRadius = 5;
-         var maxRadius = 20;
+         var maxRadius = parseInt(document.getElementById("maxRadius").value);
          var maxVelocity = 1.5;
          var bands = 3;
          var bandWidth = 0.75
@@ -72,8 +86,8 @@
              }
          }
 
-         var circleRenderer = new WebGLCircleRenderer(context, numPoints,
-                                                      colors, radii);
+         circleRenderer = new WebGLCircleRenderer(context, numPoints,
+                                                  colors, radii);
 
          
          var theta = 0;
@@ -91,15 +105,19 @@
              context.cache.clear();
              context.clear();
              circleRenderer.draw();
-             requestAnimationFrame(step);
+             animationID = requestAnimationFrame(step);
 
              stats.end();
          }
 
-         requestAnimationFrame(step);
+         animationID = requestAnimationFrame(step);
      }
 
-     init();
+     if (initPage()) {
+         var drawButton = document.getElementById("drawButton");
+         drawButton.onclick = initCircles;
+         initCircles();
+     }
     </script>
   </body>
 </html>
